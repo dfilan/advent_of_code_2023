@@ -33,3 +33,5 @@ Day 13: 2 stars. Part 1 in 00:50:33, rank 3986, part 2 in 01:14:34, rank 3436.
 Day 14: 2 stars. Part 1 in 00:32:19, rank 4867, part 2 in 23:00:18, rank 23101.
 
 Day 15: 2 stars. Part 1 in 00:09:24, rank 3286, part 2 in 00:36:54, rank 3008.
+
+Day 16: 2 stars. Part 1 in 00:31:25, rank 1699, part 2 in 01:01:33, rank 2942.
