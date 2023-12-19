@@ -39,3 +39,5 @@ Day 16: 2 stars. Part 1 in 00:31:25, rank 1699, part 2 in 01:01:33, rank 2942.
 Day 17: 2 stars. Part 1 in 05:16:59, rank 5446, part 2 in 05:22:32, rank 4716.
 
 Day 18: 2 stars. Part 1 in 01:24:13, rank 4306, part 2 in 03:27:16, rank 4025.
+
+Day 19: 2 stars. Part 1 in 03:25:43, rank 8130, part 2 in 04:57:19, rank 4994.
