@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::read_to_string;
 use std::time::Instant;
 
@@ -10,13 +10,13 @@ fn main() {
     println!("{:?} elapsed", elapsed);
 }
 
-// 2525 is too low
-// 180165 is too high
-
 // make vec of bricks
 // sort it by lowest z
 // descend brick by brick
 // use range arithmetic
+
+// should have gotten dependencies as bricks were falling
+// then I don't have this quadratic thing where I'm checking all pairs
 
 type Coord = (u64, u64, u64);
 
@@ -55,31 +55,61 @@ fn part_2(file_path: &str) -> usize {
         ));
     }
     fallen_brick_vec.sort_by_key(|(c1, _)| c1.2);
-    let mut accum = 0;
+    let mut supports_me: HashMap<(Coord, Coord), Vec<(Coord, Coord)>> = HashMap::new();
+    let mut i_support: HashMap<(Coord, Coord), Vec<(Coord, Coord)>> = HashMap::new();
     for (i, brick) in fallen_brick_vec.iter().enumerate() {
+        let support_this_brick = fallen_brick_vec[..i]
+            .iter()
+            .filter(|b| b.1 .2 + 1 == brick.0 .2 && bricks_overlap(**b, *brick))
+            .copied()
+            .collect::<Vec<_>>();
+        supports_me.insert(*brick, support_this_brick);
+        let this_brick_supports = fallen_brick_vec[i..]
+            .iter()
+            .take_while(|b| b.0 .2 <= brick.1 .2 + 1)
+            .filter(|b| brick.1 .2 + 1 == b.0 .2 && bricks_overlap(**b, *brick))
+            .copied()
+            .collect::<Vec<_>>();
+        i_support.insert(*brick, this_brick_supports);
+    }
+    let mut accum = 0;
+    for brick in fallen_brick_vec {
         // println!("looking at fallen brick {:?}", brick);
         // see how many other bricks rest on this brick
         // see what those bricks rest on
-        let mut singleton = HashSet::new();
-        singleton.insert(*brick);
-        let brick_height = brick.1 .2;
+        // let mut singleton = HashSet::new();
+        // singleton.insert(*brick);
+        // let brick_height = brick.1 .2;
         // let num_resting = tower_above(brick_height, brick_height, singleton, &fallen_brick_vec);
-        let num_resting = tower_above(i, *brick, &fallen_brick_vec);
+        let num_resting = tower_above(brick, &supports_me, &i_support);
         // println!("set resting on that brick: {:?}", num_resting);
         accum += num_resting;
     }
     accum
 }
 
-fn tower_above(i: usize, brick: (Coord, Coord), fallen_brick_vec: &[(Coord, Coord)]) -> usize {
-    let mut above_me: HashSet<(Coord, Coord)> = HashSet::new();
-    above_me.insert(brick);
-    for (j, brick_above) in fallen_brick_vec[(i + 1)..].iter().enumerate() {
-        if rests_on_set(j + i + 1, *brick_above, &above_me, fallen_brick_vec) {
-            above_me.insert(*brick_above);
+fn tower_above(
+    brick: (Coord, Coord),
+    supports_me: &HashMap<(Coord, Coord), Vec<(Coord, Coord)>>,
+    i_support: &HashMap<(Coord, Coord), Vec<(Coord, Coord)>>,
+) -> usize {
+    let mut tower: HashSet<(Coord, Coord)> = HashSet::new();
+    tower.insert(brick);
+    let mut queue = VecDeque::new();
+    queue.push_back(i_support.get(&brick).unwrap());
+    while let Some(new_bricks) = queue.pop_front() {
+        // for each new brick,
+        // add it to the tower if it's support is only things in the tower
+        // then add things it supports to the queue
+        for new_brick in new_bricks {
+            let supports = supports_me.get(new_brick).unwrap();
+            if supports.iter().all(|b| tower.contains(b)) {
+                tower.insert(*new_brick);
+                queue.push_back(i_support.get(new_brick).unwrap());
+            }
         }
     }
-    above_me.len() - 1
+    tower.len() - 1
 }
 
 fn rests_on_set(
