@@ -49,3 +49,5 @@ Day 21: 2 stars. Part 1 in 00:29:21, rank 2868, part 2 in 22:14:43, rank 8146.
 Day 22: 2 stars. Part 1 in 04:20:01, rank 4446, part 2 in 13:45:41, rank 7995.
 
 Day 23: 1 star. Part 1 in 00:37:33, rank 1528.
+
+Day 24: 1 star. Part 1 in 00:33:17, rank 583.

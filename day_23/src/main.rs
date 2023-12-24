@@ -13,6 +13,7 @@ fn main() {
 
 // longer than 2566
 // shorter than num dots (however many that is)
+// 7010 is also wrong aaaaaaaaaaaaaaaaaaargh
 
 type Coord = (usize, usize);
 
@@ -29,12 +30,14 @@ fn part_2(file_path: &str) -> u64 {
     let end_coord: Coord = (num_rows - 1, num_cols - 2);
     // println!("end coord {:?}", end_coord);
     let (collapsed_map, new_end_coord, weight) = collapse_map(start_coord, end_coord, &map);
-    // println!("collapsed map. Number of entries: {}", collapsed_map.len());
+    // println!("collapsed map: {:?}", collapsed_map);
+    println!("collapsed map. Number of entries: {}", collapsed_map.len());
     // println!("collapsed map keys: {:?}", collapsed_map.keys().collect::<Vec<_>>());
     // println!("new end coord {:?}", new_end_coord);
-    // println!("weight from new end to real end: {}", weight);
+    println!("weight from new end to real end: {}", weight);
     // println!("collapsed map {:?}", collapsed_map);
-    funky_bfs_2(start_coord, new_end_coord, &collapsed_map) + weight
+    // funky_dfs(start_coord, new_end_coord, &collapsed_map) + weight
+    weight
 }
 
 fn collapse_map(
@@ -64,20 +67,29 @@ fn collapse_map(
                     .or_insert(HashSet::from([*parent]));
                 graph
                     .entry(*point)
-                    .and_modify(|ends_vec: &mut Vec<(Coord, u64)>| ends_vec.push((coord, *weight)))
+                    .and_modify(|ends_vec: &mut Vec<(Coord, u64)>| {
+                        if !ends_vec.contains(&(coord, *weight)) {
+                            ends_vec.push((coord, *weight));
+                        }
+                    })
                     .or_insert(vec![(coord, *weight)]);
                 if *point == end_coord {
                     new_end_coord = coord;
                     end_weight = *weight;
                 }
             }
-            let mut filtered_next_points_weights = next_points_and_weights
+            let filtered_next_points_weights = next_points_and_weights
                 .iter()
                 .map(|(p, _, w)| (*p, *w))
                 .collect::<Vec<_>>();
             graph
                 .entry(coord)
-                .and_modify(|ends_vec| ends_vec.append(&mut filtered_next_points_weights))
+                .and_modify(|ends_vec| {
+                    for (p, w) in filtered_next_points_weights.iter() {
+                        if !ends_vec.contains(&(*p, *w)) {
+                            ends_vec.push((*p, *w));
+                        }
+                    }})
                 .or_insert(filtered_next_points_weights);
             explored_coords.insert(coord);
         }
@@ -113,19 +125,17 @@ fn get_next_points_and_weights(
             .filter(|succ| parent != **succ)
             .collect::<Vec<_>>();
         // println!("filtered successors: {:?}", filtered_succs);
-        if filtered_succs.len() > 1 {
+        if c == end_coord || filtered_succs.len() > 1 {
             return_vec.push((c, parent, w));
         } else if filtered_succs.len() == 1 {
             fringe.push_back((*filtered_succs[0], c, w + 1));
-        } else if c == end_coord {
-            return_vec.push((c, parent, w));
         }
     }
     return_vec
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
-struct SearchState3 {
+struct SearchState2 {
     coord: Coord,
     path_to: HashSet<Coord>,
     cost_to: u64,
@@ -136,24 +146,24 @@ fn funky_dfs(
     end_coord: Coord,
     graph: &HashMap<Coord, Vec<(Coord, u64)>>,
 ) -> u64 {
-    let start_state = SearchState3 {
+    let start_state = SearchState2 {
         coord: start_coord,
         path_to: HashSet::new(),
         cost_to: 0,
     };
     let mut search_stack = vec![start_state];
-    let mut costs_to_end = Vec::new();
+    let mut longest_cost = 0;
     while let Some(state) = search_stack.pop() {
         // println!("popping coord {:?}", state.coord);
         let succs = graph.get(&state.coord).unwrap();
         for (succ, w) in succs {
-            if *succ == end_coord {
+            if *succ == end_coord && w + state.cost_to > longest_cost {
                 println!("found path to end of weight {}", w + state.cost_to);
-                costs_to_end.push(w + state.cost_to);
+                longest_cost = w + state.cost_to;
             } else if !state.path_to.contains(succ) {
                 let mut new_path_to = state.path_to.clone();
                 new_path_to.insert(state.coord);
-                let new_state = SearchState3 {
+                let new_state = SearchState2 {
                     coord: *succ,
                     path_to: new_path_to,
                     cost_to: w + state.cost_to,
@@ -162,7 +172,7 @@ fn funky_dfs(
             }
         }
     }
-    *costs_to_end.iter().max().unwrap()
+    longest_cost
 }
 
 fn funky_bfs_2(
@@ -170,7 +180,7 @@ fn funky_bfs_2(
     end_coord: Coord,
     graph: &HashMap<Coord, Vec<(Coord, u64)>>,
 ) -> u64 {
-    let start_state = SearchState3 {
+    let start_state = SearchState2 {
         coord: start_coord,
         path_to: HashSet::new(),
         cost_to: 0,
@@ -181,6 +191,7 @@ fn funky_bfs_2(
     while let Some(state) = search_queue.pop_front() {
         // println!("popping coord {:?}", state.coord);
         if state.coord == end_coord && state.cost_to > longest_walk {
+            println!("found newest longest path: {}", state.cost_to);
             longest_walk = state.cost_to;
         }
         if !state.path_to.contains(&state.coord) {
@@ -189,7 +200,7 @@ fn funky_bfs_2(
             let succs = graph.get(&state.coord).unwrap();
             for (succ, w) in succs {
                 if !new_path_to.contains(succ) {
-                    let new_state = SearchState3 {
+                    let new_state = SearchState2 {
                         coord: *succ,
                         path_to: new_path_to.clone(),
                         cost_to: w + state.cost_to,
